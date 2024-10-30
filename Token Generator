@@ -1,0 +1,35 @@
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
+
+import java.util.Date;
+
+public class TokenGenerator {
+
+    private static final String SECRET = "mi_secreto_super_seguro";
+    private static final long EXPIRATION_TIME = 600000;
+
+    public static void main(String[] args) {
+        String token = generateToken("usuario1");
+        System.out.println("Token generado: " + token);
+
+        DecodedJWT decodedJWT = decodeToken(token);
+        System.out.println("Token decodificado: " + decodedJWT.getSubject());
+        System.out.println("Fecha de expiración: " + decodedJWT.getExpiresAt());
+    }
+
+    public static String generateToken(String username) {
+        Algorithm algorithm = Algorithm.HMAC256(SECRET);
+        return JWT.create()
+                .withSubject(username)
+                .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .sign(algorithm);
+    }
+
+    public static DecodedJWT decodeToken(String token) {
+        Algorithm algorithm = Algorithm.HMAC256(SECRET);
+        return JWT.require(algorithm)
+                .build()
+                .verify(token);
+    }
+}
