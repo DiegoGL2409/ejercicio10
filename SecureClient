@@ -1,0 +1,42 @@
+import javax.net.ssl.*;
+import java.io.*;
+import java.security.KeyStore;
+
+public class SecureClient {
+    public static void main(String[] args) {
+        String hostname = "localhost";
+        int port = 8443;
+        String trustStorePath = "C:\\Users\\Usuario\\IdeaProjects\\aver\\resources\\server.keystore";
+        String trustStorePassword = "Diena2409eu";
+
+        try {
+
+            KeyStore trustStore = KeyStore.getInstance("JKS");
+            FileInputStream trustStoreFile = new FileInputStream(trustStorePath);
+            trustStore.load(trustStoreFile, trustStorePassword.toCharArray());
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(trustStore);
+            sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+
+            SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+            SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(hostname, port);
+            sslSocket.startHandshake(); // Iniciar el handshake SSL
+
+            PrintWriter out = new PrintWriter(sslSocket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
+
+            out.println("Hola, servidor!");
+            String response = in.readLine();
+            System.out.println("Respuesta del servidor: " + response);
+
+            in.close();
+            out.close();
+            sslSocket.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
