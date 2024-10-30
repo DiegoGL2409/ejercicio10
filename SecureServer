@@ -1,0 +1,67 @@
+import javax.net.ssl.*;
+import java.io.*;
+import java.security.KeyStore;
+
+public class SecureServer {
+    public static void main(String[] args) {
+
+        String keystorePath = "C:\\Users\\Usuario\\IdeaProjects\\aver\\resources\\server.keystore";
+        String keystorePassword = "Diena2409eu";
+
+        try {
+
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            FileInputStream keyStoreFile = new FileInputStream(keystorePath);
+            keyStore.load(keyStoreFile, keystorePassword.toCharArray());
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            keyManagerFactory.init(keyStore, keystorePassword.toCharArray());
+            sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+            SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
+            SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(8443);
+            System.out.println("Servidor SSL escuchando en el puerto 8443...");
+
+            while (true) {
+                SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
+                System.out.println("Conexión aceptada desde " + sslSocket.getInetAddress());
+
+                new Thread(new ClientHandler(sslSocket)).start();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+class ClientHandler implements Runnable {
+    private SSLSocket sslSocket;
+
+    public ClientHandler(SSLSocket sslSocket) {
+        this.sslSocket = sslSocket;
+    }
+
+    @Override
+    public void run() {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
+             PrintWriter out = new PrintWriter(sslSocket.getOutputStream(), true)) {
+
+            String request;
+            while ((request = in.readLine()) != null) {
+                System.out.println("Recibido: " + request);
+                out.println("Echo: " + request);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                sslSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
